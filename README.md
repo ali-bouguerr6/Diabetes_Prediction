@@ -14,7 +14,7 @@
 Le diabète de type 2 est une maladie chronique en progression constante qui affecte de manière significative la qualité de vie et la santé globale. La détection précoce est cruciale pour mettre en place des interventions préventives et des traitements adaptés. Les populations amérindiennes Pima sont particulièrement à risque, présentant l’un des taux les plus élevés de diabète de type 2 dans le monde.
 Utiliser les données spécifiques à cette population peut aider à développer des modèles de prédiction plus fiables et adaptés.
 
-IMAGE
+![](Image_Diabetes.jpeg)
 
 ## Objectifs
 
