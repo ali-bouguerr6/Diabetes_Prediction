@@ -76,16 +76,19 @@ Avant de commencer, assurez-vous d’avoir les éléments suivants installés et
    - Téléchargez et installez [R](https://cran.r-project.org/).  
    - Installez également [RStudio](https://posit.co/download/rstudio/) pour un environnement de développement intégré convivial.
   
-2. **Cloner le code du markdown disponible [Diabetes.R.R](Diabetes.R.R) ** 
+2. **Cloner le code du markdown disponible [Diabetes.R.R](Diabetes.R.R) **  
 
-3. **Packages R nécessaires** :  
+3. **Packages R nécessaires**
 
-Pour mener à bien cette analyse de séries temporelles avec des modèles ARIMA, assurez-vous d’avoir installé les packages suivants :
+Pour mener à bien cette étude de prédiction du diabète de type 2, assurez-vous d’avoir installé les packages R suivants :
 
-- `forecast` : pour la modélisation, l'estimation et la prévision avec des modèles ARIMA.
-- `tseries` : pour effectuer des tests de stationnarité (comme le test ADF) et d'autres analyses statistiques.
-- `ggplot2` : pour la visualisation avancée des données et des prévisions.
-- `readr` : pour importer et manipuler facilement les données (notamment des fichiers CSV).
+- **`rpart`** : pour construire et visualiser les arbres de décision.
+- **`randomForest`** : pour créer et optimiser des modèles de forêts aléatoires.
+- **`caret`** : pour le tuning des hyperparamètres et la validation croisée.
+- **`ggplot2`** : pour la visualisation avancée des résultats et des performances.
+- **`readr`** : pour importer et manipuler aisément les données (fichiers CSV, etc.).
+- **`dplyr`** : pour la manipulation et la transformation efficace des données.
+
 
 
 
