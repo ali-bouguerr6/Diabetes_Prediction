@@ -1,0 +1,373 @@
+
+##Comment prédire le diabete en utilisant le ML 
+
+##Etape 1 : Description de la problèmatique-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Contexte
+
+Le diabète de type 2 est une maladie chronique en progression constante qui affecte de manière significative la qualité de vie et la santé globale. La détection précoce est cruciale pour mettre en place des interventions préventives et des traitements adaptés. Les populations amérindiennes Pima sont particulièrement à risque, présentant l’un des taux les plus élevés de diabète de type 2 dans le monde.
+Utiliser les données spécifiques à cette population peut aider à développer des modèles de prédiction plus fiables et adaptés.
+
+#Objectifs
+
+* Développer un modèle de machine learning capable de prédire efficacement l’occurrence du diabète de type 2 chez les femmes amérindiennes Pima à partir de variables biométriques et démographiques.
+
+* identifier les facteurs de risque les plus significatifs pour le diabète de type 2 dans cette population.
+
+
+## Etape 2: Collecter, Nettoyage et préparation des données-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+La base de données "Diabetes" est disponible sur Kaggle. Cette base de données contient des informations sur des patientes féminines âgées d'au moins 21 ans et provenant de populations amérindiennes Pima, qui ont été examinées pour déterminer s'ils avaient un diabète de type 2. Les caractéristiques incluent des mesures telles que la taille, le poids, l'âge, le nombre de grossesses, la pression artérielle.
+
+La base de données contient les colonnes suivantes :
+
+- Pregnancies : nombre de grossesses
+- Glucose : concentration de glucose dans le plasma sanguin à jeun
+- BloodPressure : pression artérielle diastolique (mm Hg)
+- SkinThickness : épaisseur du pli cutané tricipital (mm)
+- Insulin : taux d’insuline sérique à 2 heures (mu U/ml)
+- BMI : indice de masse corporelle (kg/m^2)
+- DiabetesPedigreeFunction : fonction pedigree du diabète
+- Age : âge (années)
+- Outcome : variable cible (0 = non diabétique, 1 = diabétique)
+
+
+## Importation et Nettoyage des données-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+```{r}
+data <- read.csv("C:/Users/alibo/OneDrive/Bureau/Projet/R/Diabetes/diabetes.csv")
+head(data)
+str(data)
+```
+
+```{r}
+data$Outcome <- as.factor(data$Outcome)
+str(data)
+
+```
+
+```{r}
+summary(data)
+```
+## Etape 3 : Feature engineering-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+La division de la base de données en ensembles d'entraînement et de test est une étape essentielle pour garantir que le modèle d'apprentissage automatique puisse généraliser efficacement sur des données qu'il n'a jamais vues. La base de données initiale est divisée en deux parties :
+
+1. Ensemble d'entraînement (train) : Cet ensemble est utilisé pour former le modèle. Il contient une majorité des données disponibles généralement entre 70% et 80% du total.
+
+2. Ensemble de test (test) : Cet ensemble est utilisé pour évaluer les performances du modèle. Il contient le reste des données généralement entre 20% et 30% du total.
+
+```{r}
+library(caret)
+
+# Définir un seed pour la reproductibilité (permet de controler l'aléa)
+set.seed(123)
+
+# Créer un indice pour diviser aléatoirement les données ( 80% et 20%)
+
+trainIndex <- createDataPartition(data$Outcome, p =0.8, list = FALSE)
+
+trainIndex
+```
+
+# Séparation en ensemble train et test-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+```{r}
+#Diviser les données en ensembles d'entrainement et de test
+
+dataTrain <-data[trainIndex,]
+dataTest <- data[-trainIndex,]
+
+#Afficher les dimensions des ensembles d'entrainement et de test
+
+cat("Dimensions de l'ensemble d'entraînement :", dim(dataTrain), "\n")
+cat("Dimensions de l'ensemble de test :", dim(dataTest), "\n")
+```
+## Etape 4 : Entrainement des differents modèles de ML-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Entrainement du modèle d'arbre de decision (decision trees)
+
+
+```{r}
+library(rpart)
+library(rpart.plot)
+
+#Construire l'arbre de décision (Le ".," représente "Outcome" en fonction de toutes les autres variables)
+
+treeModel <- rpart (Outcome ~ ., data = dataTrain, method = "class")
+
+# Afficher un résume du modèle 
+
+summary(treeModel)
+
+```
+
+Comme nous pouvons le voir dans la section "Variable Importance" représente les variables les plus pertinente en fonction avec le fait d'obtenir le diabète T2. 
+Le taux de glucose est ici la variable la plus importante, suivie par l'age, l'indice de masse corporelle et l'insuline.
+
+
+```{r}
+# Visualiser l'arbre de décision 
+
+rpart.plot(treeModel, main="Arbre de Décision - Modèle de Diabète")
+```
+```{r}
+#Afficher les paramètres de compléxité pour l'élagage
+printcp(treeModel)
+
+# Tracer le graphique du paramètre de complexité 
+plotcp(treeModel)
+
+```
+# Prendre la première valeur de CP :
+optimalcp <- treeModel$cptable[2, "CP"]
+
+# Afficher la valeur
+optimalcp
+
+```
+
+```{r}
+
+# Elaguer (prunning) l'arbre en utlisant le paramètre de complexité optimal
+
+prunedTreeModel <- prune(treeModel, cp = optimalcp)
+
+
+#Visualiser l'arbre élagué
+rpart.plot(prunedTreeModel, main="Arbre de Décision Elagué - Modèle de Diabète")
+
+```
+
+Interprétation : Ce modèle est un arbre de décision, basé uniquement sur le seuil de la glycémie (Glucose). 
+
+- Si la valeur de Glucose est inférieure à 155 : le modèle prédit l'absence de diabète (classe 0) avec une probabilité d'environ 26% (ce qui signifie qu'il y a 26% de patients diabétiques dans ce groupe).
+
+- Si la valeur de Glucose est supérieure ou égale à 155 : le modèle prédit la présence de diabète (classe 1) avec une probabilité d'environ 81%.
+
+#Entrainement de la base de test-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+```{r}
+
+
+#Faire des prédictions probabilistes sur l'ensemble de test avec larbre élagué
+
+probPrediction<- predict(prunedTreeModel, dataTest, type="prob")[,2]
+probPrediction
+
+```
+
+```{r}
+
+#Utiliser ROCR pour tracer la courbe ROC
+
+pred<-prediction(probPrediction, dataTest$Outcome)
+perf<-performance(pred, measure="tpr", x.measure = "fpr")
+
+# Tracer la courbe ROC
+plot(perf, 
+     main = "Courbe ROC - Arbre de Décision Élagué", 
+     col = "blue", 
+     lwd = 2)
+
+abline(a = 0, b = 1, lty = 2, col = "red")
+
+# Calculer et afficher l'AUC
+auc <- performance(pred, measure = "auc")
+aucValue <- auc@y.values[[1]]
+cat("AUC :", aucValue, "\n")
+
+```
+Si l’on se réfère à une AUC d’environ 0,65, cela signifie qu’en moyenne, si l’on prend 10 individus au hasard dans la base de données, 
+le modèle en classera correctement environ 6 dans leur catégorie (diabétique ou non). Cela reste meilleur qu’un modèle purement aléatoire (AUC = 0,5, qui correspondrait à 5 bonnes classifications sur 10),
+mais on voit bien que ce n’est pas un modèle « excellent » (qui s’approcherait d’une AUC proche de 1).
+
+
+# Entrainement des differents modèles de ML-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Entrainement du modèle d'arbre de decision (decision tree)-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+```{r}
+library(randomForest)
+library(e1071)
+library(caret)
+```
+
+```{r}
+# Construire une foret aléatoire avec des paramètres  par défaut
+
+rfModel<- randomForest(Outcome ~ ., data = dataTrain, importance=TRUE)
+
+#Afficher un résume du modèle 
+print(rfModel)
+
+#Importance des variables
+
+importance(rfModel)
+varImpPlot(rfModel)
+```
+Sur ces graphiques, on constate que Glucose ressort comme la variable ayant le plus grand impact sur la performance du modèle
+(en termes de Mean Decrease Accuracy et/ou Mean Decrease Gini), suivie par des variables comme BMI, Age et Pregnancies.
+Autrement dit, ce sont elles qui contribuent le plus à la capacité du modèle à distinguer correctement les individus diabétiques des non-diabétiques.
+Les variables en bas du classement (par exemple, SkinThickness) ont un impact moindre sur la performance globale du modèle.
+
+```{r}
+
+# Faire des prédictions sur l'ensemble de test
+predictions <- predict(rfModel, dataTest)
+
+# Calculer et afficher la matrice de confusion
+confMatrix<- confusionMatrix(predictions, dataTest$Outcome)
+
+print(confMatrix)
+
+# Faire des prédictions probabilistes pour le calcul de l'AUC
+probPredictionsTest <- predict(rfModel, dataTest, type = "prob")[, 2]
+probPredictionsTrain <- predict(rfModel, dataTrain, type = "prob")[, 2]
+
+# Calculer et afficher l'AUC pour l'ensemble de test
+rocTest <- roc(dataTest$Outcome, probPredictionsTest)
+aucTest <- auc(rocTest)
+
+# Calculer et afficher l'AUC pour l'ensemble d'entraînement
+rocTrain <- roc(dataTrain$Outcome, probPredictionsTrain)
+aucTrain <- auc(rocTrain)
+
+# Afficher des mesures de performance
+cat("Exactitude : ", confMatrix$overall["Accuracy"], "\n")
+cat("Précision : ", confMatrix$byClass["Pos Pred Value"], "\n")
+cat("Rappel : ", confMatrix$byClass["Sensitivity"], "\n")
+cat("Score F1 : ", confMatrix$byClass["F1"], "\n")
+cat("AUC sur l'ensemble de test : ", aucTest, "\n")
+cat("AUC sur l'ensemble d'entraînement : ", aucTrain, "\n")
+
+```
+
+```
+
+# Faire des prédictions probabilistes pour le calcul de l'AUC
+probPredictionsTest <- predict(rfModel, dataTest, type = "prob")[, 2]
+probPredictionsTrain <- predict(rfModel, dataTrain, type = "prob")[, 2]
+
+# Calculer et afficher l'AUC pour l'ensemble de test
+rocTest <- roc(dataTest$Outcome, probPredictionsTest)
+aucTest <- auc(rocTest)
+
+# Calculer et afficher l'AUC pour l'ensemble d'entraînement
+rocTrain <- roc(dataTrain$Outcome, probPredictionsTrain)
+aucTrain <- auc(rocTrain)
+
+# Afficher des mesures de performance
+cat("Exactitude : ", confMatrix$overall["Accuracy"], "\n")
+cat("Précision : ", confMatrix$byClass["Pos Pred Value"], "\n")
+cat("Rappel : ", confMatrix$byClass["Sensitivity"], "\n")
+cat("Score F1 : ", confMatrix$byClass["F1"], "\n")
+cat("AUC sur l'ensemble de test : ", aucTest, "\n")
+cat("AUC sur l'ensemble d'entraînement : ", aucTrain, "\n")
+
+```
+
+Le modèle testé affiche une précision de 82,35 %, ce qui signifie qu'il classe correctement environ 8 individus sur 10.
+De plus, une AUC de 0,8821 sur l'ensemble de test démontre une excellente capacité à différencier les patients diabétiques des non-diabétiques, comparé à l'AUC de 0,6492453 obtenue avec l'arbre de décision initial.
+Par ailleurs, une AUC de 1 sur l'ensemble d'entraînement indique que le modèle classifie parfaitement les données sur lesquelles il a été formé, ce qui suggère de "l'overfitting" et pourrait compromettre sa capacité à généraliser sur de nouvelles données. 
+
+
+Nous allons maintenant remédier à ce problème en ajustant les hyperparamètres du modèle, par exemple en limitant la profondeur de l'arbre pour éviter qu'il ne s'adapte trop finement aux données d'entraînement.
+Nous utiliserons également le cross-validation pour évaluer la performance du modèle sur différentes partitions des données, et le pruning  pour supprimer les branches qui contribuent à l'overfitting.
+
+Nous verrons en détail ces approches dans la partie optimisation afin d'améliorer notre accuracy.
+
+##Etape 6 : Optimisation des paramétres-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+```{r}
+# Initialisation d'un vecteur pour stocker les valeurs OOB (Out-of-Bag)
+
+valeurs_oob <- vector(length = 8)
+
+# Boucle pour créer des modèles avec différentes valeurs de mtry
+# (nombre de variables considérées à chaque étape)
+for (i in 1:8) {
+  # Créer un modèle de forêt aléatoire avec mtry = i
+  modele_temp <- randomForest(Outcome ~ ., data = dataTrain, mtry = i, ntree = 500)
+  
+  # Stocker l'erreur OOB du modèle
+valeurs_oob[i] <- modele_temp$err.rate[nrow(modele_temp$err.rate), 1]
+
+}
+
+# Afficher les valeurs OOB
+print(valeurs_oob)
+
+```
+
+```{r}
+#Trouver la valeur minimale de l'erreur OOB
+erreur_minimale<- min(valeurs_oob)
+
+#Afficher l'erreur minimale
+print(erreur_minimale)
+```
+
+```{r}
+# Trouver la valeur optimale pour mtry (celle qui correspond à l'erreur minimale)
+
+valeur_optimal_mtry <- which(valeurs_oob == erreur_minimale)[1]
+
+```
+
+
+```{r}
+# Créer un modèle final en utilisant la meilleure valeur de mtry et en calculant les proximités
+modele_final <- randomForest(
+  Outcome ~ .,
+  data = dataTrain,
+  ntree = 500,
+  proximity = TRUE,
+  mtry = valeur_optimal_mtry
+)
+
+# Afficher le modèle final
+print(modele_final)
+
+```
+
+Nous venons de finaliser la conception de notre arbre de décision en optimisant ses paramètres.
+Nous pouvons maintenant passer à la dernière étape, qui consiste à effectuer les prédictions.
+
+
+
+##Etape 7 : Prédictions-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+```{r}
+#Pour Predire, ici nous allons recuper notre base de données des patients
+
+dataPred <- read.csv("C:/Users/alibo/OneDrive/Bureau/Projet/R/Diabetes/diabetes.csv")
+
+
+```
+
+```{r}
+# Réaliser les prédictions avec le modèle final
+predictions <- predict(modele_final, dataPred, type = "response")
+
+# Obtenir les probabilités de prédiction
+probabilites <- predict(modele_final, dataPred, type = "prob")
+
+# Ajouter les prédictions et les probabilités aux données
+dataPred$predictions <- predictions
+dataPred$probabilite_classe_0 <- probabilites[, 1]
+dataPred$probabilite_classe_1 <- probabilites[, 2]
+
+```
+
+
+
+```{r}
+
+head(dataPred)
+
+```
