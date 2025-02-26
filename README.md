@@ -76,7 +76,7 @@ Avant de commencer, assurez-vous d’avoir les éléments suivants installés et
    - Téléchargez et installez [R](https://cran.r-project.org/).  
    - Installez également [RStudio](https://posit.co/download/rstudio/) pour un environnement de développement intégré convivial.
   
-2. **Cloner le code du markdown disponible [Diabetes.R.R](Diabetes.R.R) **  
+2. **Cloner le code du markdown disponible [Script_Diabetes](Script_Diabetes) **  
 
 3. **Packages R nécessaires**
 
